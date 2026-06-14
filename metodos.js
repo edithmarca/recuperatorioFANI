@@ -86,6 +86,56 @@ function numeroDeCodicion(A) {
 }
 
 /* ═══════════════════════════════════════════════
+   EDO — EULER (escalar)
+   ═══════════════════════════════════════════════ */
+
+/**
+ * Método de Euler explícito (orden 1).
+ * @param {Function} f        - f(t, y)
+ * @param {number}   y0
+ * @param {number}   t0
+ * @param {number}   tEnd
+ * @param {number}   h
+ * @param {Function} [stopCond]
+ */
+function euler(f, y0, t0, tEnd, h, stopCond = null) {
+  const ts = [t0], ys = [y0];
+  let t = t0, y = y0;
+  while (t < tEnd) {
+    y = y + h * f(t, y);
+    t = +(t + h).toFixed(10);
+    ts.push(+t.toFixed(4));
+    ys.push(+y.toFixed(4));
+    if (stopCond && stopCond(t, y)) break;
+  }
+  return { ts, ys };
+}
+
+/* ═══════════════════════════════════════════════
+   EDO — HEUN (escalar)
+   ═══════════════════════════════════════════════ */
+
+/**
+ * Método de Heun (Euler mejorado / Runge-Kutta orden 2).
+ * Predice con Euler, corrige con trapecio → error O(h³).
+ */
+function heun(f, y0, t0, tEnd, h, stopCond = null) {
+  const ts = [t0], ys = [y0];
+  let t = t0, y = y0;
+  while (t < tEnd) {
+    const k1 = f(t, y);
+    const yPred = y + h * k1;           // predictor (Euler)
+    const k2   = f(t + h, yPred);
+    y = y + (h / 2) * (k1 + k2);       // corrector (promedio)
+    t = +(t + h).toFixed(10);
+    ts.push(+t.toFixed(4));
+    ys.push(+y.toFixed(4));
+    if (stopCond && stopCond(t, y)) break;
+  }
+  return { ts, ys };
+}
+
+/* ═══════════════════════════════════════════════
    EDO — RUNGE-KUTTA 4 (escalar)
    ═══════════════════════════════════════════════ */
 
@@ -116,28 +166,59 @@ function rk4(f, y0, t0, tEnd, h, stopCond = null) {
 }
 
 /* ═══════════════════════════════════════════════
-   EDO — RK4 VECTORIZADO (Escenario G)
+   EDO VECTORIZADO — EULER, HEUN, RK4 (Escenario G)
    ═══════════════════════════════════════════════ */
 
+// Helpers vectoriales compartidos
+const _addV  = (a, b) => a.map((v, i) => v + b[i]);
+const _scaleV = (s, v) => v.map(x => x * s);
+
 /**
+ * Euler vectorizado — orden 1.
  * @param {Function} F  - F(t, Y) => dY/dt como array
- * @param {number[]} Y0
- * @param {number}   t0
- * @param {number}   tEnd
- * @param {number}   h
  */
-function rk4Vector(F, Y0, t0, tEnd, h) {
-  const n = Y0.length;
-  const addVec = (a, b) => a.map((v, i) => v + b[i]);
-  const scaleVec = (s, v) => v.map(x => x * s);
+function eulerVector(F, Y0, t0, tEnd, h) {
   let t = t0, Y = [...Y0];
   const ts = [t0], Ys = [Y0.map(v => +v.toFixed(4))];
-
   while (t < tEnd) {
     const K1 = F(t, Y);
-    const K2 = F(t + h / 2, addVec(Y, scaleVec(h / 2, K1)));
-    const K3 = F(t + h / 2, addVec(Y, scaleVec(h / 2, K2)));
-    const K4 = F(t + h,     addVec(Y, scaleVec(h, K3)));
+    Y = _addV(Y, _scaleV(h, K1));
+    t = +(t + h).toFixed(10);
+    ts.push(+t.toFixed(4));
+    Ys.push(Y.map(v => +v.toFixed(4)));
+  }
+  return { ts, Ys };
+}
+
+/**
+ * Heun vectorizado — orden 2.
+ */
+function heunVector(F, Y0, t0, tEnd, h) {
+  let t = t0, Y = [...Y0];
+  const ts = [t0], Ys = [Y0.map(v => +v.toFixed(4))];
+  while (t < tEnd) {
+    const K1   = F(t, Y);
+    const Ypred = _addV(Y, _scaleV(h, K1));
+    const K2   = F(t + h, Ypred);
+    Y = Y.map((v, i) => v + (h / 2) * (K1[i] + K2[i]));
+    t = +(t + h).toFixed(10);
+    ts.push(+t.toFixed(4));
+    Ys.push(Y.map(v => +v.toFixed(4)));
+  }
+  return { ts, Ys };
+}
+
+/**
+ * RK4 vectorizado — orden 4.
+ */
+function rk4Vector(F, Y0, t0, tEnd, h) {
+  let t = t0, Y = [...Y0];
+  const ts = [t0], Ys = [Y0.map(v => +v.toFixed(4))];
+  while (t < tEnd) {
+    const K1 = F(t, Y);
+    const K2 = F(t + h / 2, _addV(Y, _scaleV(h / 2, K1)));
+    const K3 = F(t + h / 2, _addV(Y, _scaleV(h / 2, K2)));
+    const K4 = F(t + h,     _addV(Y, _scaleV(h, K3)));
     Y = Y.map((v, i) => v + (h / 6) * (K1[i] + 2 * K2[i] + 2 * K3[i] + K4[i]));
     t = +(t + h).toFixed(10);
     ts.push(+t.toFixed(4));
@@ -166,6 +247,32 @@ function lagrange(xs, ys, t) {
     result += ys[i] * Li;
   }
   return result;
+}
+
+/**
+ * Interpolación de Newton — Diferencias Divididas.
+ * Construye la tabla de diferencias divididas y evalúa en t.
+ * @param {number[]} xs
+ * @param {number[]} ys
+ * @param {number}   t
+ * @returns {{ value: number, tabla: number[][] }}
+ */
+function newtonDivDiff(xs, ys, t) {
+  const n = xs.length;
+  // Construir tabla de diferencias divididas
+  const dd = Array.from({ length: n }, (_, i) => new Array(n).fill(0));
+  for (let i = 0; i < n; i++) dd[i][0] = ys[i];
+  for (let j = 1; j < n; j++) {
+    for (let i = 0; i < n - j; i++) {
+      dd[i][j] = (dd[i + 1][j - 1] - dd[i][j - 1]) / (xs[i + j] - xs[i]);
+    }
+  }
+  // Evaluar con el esquema de Horner
+  let value = dd[0][n - 1];
+  for (let i = n - 2; i >= 0; i--) {
+    value = dd[0][i] + (t - xs[i]) * value;
+  }
+  return { value, tabla: dd };
 }
 
 /**
@@ -303,16 +410,27 @@ function secante(f, x0, x1, tol = 1e-6, maxIter = 100) {
 
 /* Exportar al scope global (sin módulos para compatibilidad CDN) */
 window.NUM = {
+  // Álgebra lineal
   gaussSeidel,
   numeroDeCodicion,
   inversaGauss,
+  // EDO escalares
+  euler,
+  heun,
   rk4,
+  // EDO vectorizados
+  eulerVector,
+  heunVector,
   rk4Vector,
+  // Interpolación
   lagrange,
+  newtonDivDiff,
   splineCubico,
+  // Integración
   trapecio,
   simpson13,
   simpson38,
+  // Raíces
   newtonRaphson,
   biseccion,
   secante
