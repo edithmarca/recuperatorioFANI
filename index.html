@@ -69,11 +69,6 @@ body {
   pointer-events: none;
 }
 
-.radar-wrap {
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 12px rgba(0,212,255,.5));
-}
-
 .header-text .eyebrow {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -386,16 +381,66 @@ tr.converged td { color: var(--green) !important; }
   letter-spacing: .06em;
 }
 
+
+/* ═══════════════ BLOQUES EXPLICATIVOS PARA DEFENSA ═══════════════ */
+.info-box{
+  margin-top:15px;
+  padding:15px;
+  background: rgba(0,212,255,0.05);
+  border: 1px solid rgba(0,212,255,0.15);
+  border-left:4px solid var(--cyan);
+  border-radius:8px;
+  font-size:13px;
+  line-height:1.7;
+  color: var(--text);
+}
+.info-box h4{
+  color: var(--cyan);
+  margin-bottom:10px;
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.info-box p{ margin-bottom:10px; color: var(--text); }
+.info-box ul{ margin:8px 0 12px 18px; color: var(--text); }
+.info-box li{ margin-bottom:6px; }
+.method-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap:10px;
+  margin-top:10px;
+}
+.method-pill{
+  background: rgba(123,47,255,.08);
+  border:1px solid rgba(123,47,255,.35);
+  border-radius:8px;
+  padding:10px;
+}
+.method-pill strong{ color:#b48fff; display:block; margin-bottom:4px; }
+.defensa-note{
+  background: rgba(255,107,53,.08);
+  border-left-color: var(--orange);
+}
+.defensa-note h4{ color: var(--orange); }
+
 /* ═══════════════ CANVAS ═══════════════ */
 canvas { max-width: 100%; }
 
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<style>
+[id*="radar"], [class*="radar"] {
+  display: none !important;
+}
+</style>
+
 </head>
 <body>
 
 <!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
 <header class="site-header">
+  
   <div class="header-text">
     <p class="eyebrow">U.M.S.A · Métodos Numéricos · Desafío Final</p>
     <h1>Centro de Control FANI</h1>
@@ -422,7 +467,7 @@ canvas { max-width: 100%; }
   <div class="panel-header">
     <span class="badge">Álgebra Lineal</span>
     <h2>Triangulación Radar — Localización Espacial 3D</h2>
-    <p class="desc">Tres estaciones detectan simultáneamente al FANI. Se resuelve el sistema lineal <em>Ax = b</em> para obtener las coordenadas (x, y, z). Método: <strong>Gauss-Seidel</strong> con análisis de perturbación.</p>
+    
   </div>
 
   <div class="grid-2">
@@ -472,7 +517,7 @@ canvas { max-width: 100%; }
   <div class="panel-header">
     <span class="badge">EDO</span>
     <h2>Descenso Cinemático — Simulación de Altitud</h2>
-    <p class="desc">dH/dt = Empuje(t) − Atracción(t). Se integra con <strong>Runge-Kutta 4</strong> hasta que el objeto cruza la zona de alerta comercial.</p>
+    
   </div>
   <div class="grid-2">
     <div class="card">
@@ -487,6 +532,13 @@ canvas { max-width: 100%; }
       <input type="number" id="alarmaB" value="2000" />
       <label>Paso de tiempo h (s):</label>
       <input type="number" id="hB" value="0.01" step="0.001" />
+      <label>Método:</label>
+      <select id="metodoB">
+        <option value="rk4">Runge-Kutta 4 (RK4)</option>
+        <option value="heun">Heun (RK2)</option>
+        <option value="euler">Euler</option>
+        <option value="todos">Comparar los tres</option>
+      </select>
       <div class="btn-row">
         <button class="btn-primary" onclick="simularDescenso()">Simular Descenso</button>
       </div>
@@ -497,6 +549,10 @@ canvas { max-width: 100%; }
       <canvas id="chartB" height="240"></canvas>
     </div>
   </div>
+  <div class="card mt" id="tablaB-wrap" style="display:none">
+    <h3>Tabla Comparativa de Tiempos de Cruce</h3>
+    <div id="tablaB" class="table-wrap"></div>
+  </div>
 </section>
 
 <!-- ════════════════════════ ESCENARIO C ════════════════════════ -->
@@ -504,7 +560,7 @@ canvas { max-width: 100%; }
   <div class="panel-header">
     <span class="badge">Interpolación</span>
     <h2>Reconstrucción de Ruta de Vuelo</h2>
-    <p class="desc">A partir de datos dispersos de altitud/tiempo se genera una curva continua con <strong>Splines Cúbicos</strong> (o Lagrange). El usuario consulta cualquier instante intermedio.</p>
+    
   </div>
   <div class="grid-2">
     <div class="card">
@@ -518,15 +574,32 @@ canvas { max-width: 100%; }
 30,2800</textarea>
       <label>Consultar segundo:</label>
       <input type="number" id="tConsulta" value="3" step="0.1" />
+      <label>Método:</label>
+      <select id="metodoC">
+        <option value="spline">Spline Cúbico Natural</option>
+        <option value="lagrange">Lagrange</option>
+        <option value="newton">Newton (Dif. Divididas)</option>
+        <option value="todos">Comparar los tres</option>
+      </select>
       <div class="btn-row">
         <button class="btn-primary" onclick="interpolar()">Interpolar Posición</button>
       </div>
     </div>
     <div class="card">
-      <h3>Resultado</h3>
+      <h3>Análisis del Método</h3>
       <div id="resC" class="result-box">Esperando datos de sensores…</div>
       <canvas id="chartC" height="240"></canvas>
+      
+          <div class="method-pill"><strong>Newton</strong>  </div>
+          <div class="method-pill"><strong>Spline Cúbico</strong>  </div>
+        </div>
+      </div>
+      
     </div>
+  </div>
+  <div class="card mt" id="tablaC-wrap" style="display:none">
+    <h3>Tabla de Diferencias Divididas — Newton</h3>
+    <div id="tablaC" class="table-wrap"></div>
   </div>
 </section>
 
@@ -535,7 +608,7 @@ canvas { max-width: 100%; }
   <div class="panel-header">
     <span class="badge">Integración Numérica</span>
     <h2>Desplazamiento Total Acumulado</h2>
-    <p class="desc">Calcula ∫v(t)dt usando <strong>Simpson 1/3</strong> y compara con el modelo lineal clásico, reportando el porcentaje de anomalía.</p>
+    
   </div>
   <div class="grid-2">
     <div class="card">
@@ -571,7 +644,7 @@ canvas { max-width: 100%; }
   <div class="panel-header">
     <span class="badge">Raíces de Ecuaciones</span>
     <h2>Umbral de Propulsión — Equilibrio Térmico</h2>
-    <p class="desc">Encuentra la raíz de f(v) = T_fricción(v) − T_aislamiento(v) = 0 mediante <strong>Newton-Raphson</strong>, <strong>Bisección</strong> o la <strong>Secante</strong>.</p>
+    
   </div>
   <div class="grid-2">
     <div class="card">
@@ -622,7 +695,7 @@ canvas { max-width: 100%; }
   <div class="panel-header">
     <span class="badge">Análisis de Estabilidad</span>
     <h2>Sistemas Mal Condicionados — Distorsión Electromagnética</h2>
-    <p class="desc">Se calcula el <strong>número de condición</strong> κ(A) de la matriz de radar para determinar si el sistema de rastreo es estable bajo interferencia del campo de camuflaje.</p>
+    
   </div>
   <div class="grid-2">
     <div class="card">
@@ -651,7 +724,7 @@ canvas { max-width: 100%; }
   <div class="panel-header">
     <span class="badge">EDO Vectorizado</span>
     <h2>Dinámica de Pánico Social por Avistamiento</h2>
-    <p class="desc">Sistema de EDO: Escépticos (E), Alarmados (A), Medios (M). Resuelto con <strong>RK4 vectorizado</strong>.</p>
+    
   </div>
   <div class="grid-2">
     <div class="card">
@@ -674,14 +747,27 @@ canvas { max-width: 100%; }
       <input type="number" id="paramR" value="0.1" step="0.01" />
       <label>Tiempo de simulación (días):</label>
       <input type="number" id="tG" value="30" />
+      <label>Método:</label>
+      <select id="metodoG">
+        <option value="rk4">Runge-Kutta 4 (RK4)</option>
+        <option value="heun">Heun (RK2)</option>
+        <option value="euler">Euler</option>
+        <option value="todos">Comparar Alarmados (E/H/RK4)</option>
+      </select>
       <div class="btn-row">
         <button class="btn-primary" onclick="simularDinamica()">Simular Propagación</button>
       </div>
     </div>
     <div class="card">
-      <h3>Evolución Social</h3>
+      <h3>Análisis de la Simulación</h3>
       <div id="resG" class="result-box">Esperando simulación social…</div>
       <canvas id="chartG" height="260"></canvas>
+      
+          <div class="method-pill"><strong>Heun</strong> </div>
+          <div class="method-pill"><strong>RK4</strong> </div>
+        </div>
+      </div>
+      
     </div>
   </div>
 </section>
@@ -691,7 +777,7 @@ canvas { max-width: 100%; }
   <div class="panel-header">
     <span class="badge">Evaluación</span>
     <h2>Casos de Estudio Obligatorios</h2>
-    <p class="desc">Casos preconfigurados listos para verificación por el evaluador. Pulse el botón de cada caso para ejecutarlo automáticamente.</p>
+    
   </div>
 
   <div class="casos-grid">
@@ -821,6 +907,56 @@ function numeroDeCodicion(A) {
 }
 
 /* ═══════════════════════════════════════════════
+   EDO — EULER (escalar)
+   ═══════════════════════════════════════════════ */
+
+/**
+ * Método de Euler explícito (orden 1).
+ * @param {Function} f        - f(t, y)
+ * @param {number}   y0
+ * @param {number}   t0
+ * @param {number}   tEnd
+ * @param {number}   h
+ * @param {Function} [stopCond]
+ */
+function euler(f, y0, t0, tEnd, h, stopCond = null) {
+  const ts = [t0], ys = [y0];
+  let t = t0, y = y0;
+  while (t < tEnd) {
+    y = y + h * f(t, y);
+    t = +(t + h).toFixed(10);
+    ts.push(+t.toFixed(4));
+    ys.push(+y.toFixed(4));
+    if (stopCond && stopCond(t, y)) break;
+  }
+  return { ts, ys };
+}
+
+/* ═══════════════════════════════════════════════
+   EDO — HEUN (escalar)
+   ═══════════════════════════════════════════════ */
+
+/**
+ * Método de Heun (Euler mejorado / Runge-Kutta orden 2).
+ * Predice con Euler, corrige con trapecio → error O(h³).
+ */
+function heun(f, y0, t0, tEnd, h, stopCond = null) {
+  const ts = [t0], ys = [y0];
+  let t = t0, y = y0;
+  while (t < tEnd) {
+    const k1 = f(t, y);
+    const yPred = y + h * k1;           // predictor (Euler)
+    const k2   = f(t + h, yPred);
+    y = y + (h / 2) * (k1 + k2);       // corrector (promedio)
+    t = +(t + h).toFixed(10);
+    ts.push(+t.toFixed(4));
+    ys.push(+y.toFixed(4));
+    if (stopCond && stopCond(t, y)) break;
+  }
+  return { ts, ys };
+}
+
+/* ═══════════════════════════════════════════════
    EDO — RUNGE-KUTTA 4 (escalar)
    ═══════════════════════════════════════════════ */
 
@@ -851,28 +987,59 @@ function rk4(f, y0, t0, tEnd, h, stopCond = null) {
 }
 
 /* ═══════════════════════════════════════════════
-   EDO — RK4 VECTORIZADO (Escenario G)
+   EDO VECTORIZADO — EULER, HEUN, RK4 (Escenario G)
    ═══════════════════════════════════════════════ */
 
+// Helpers vectoriales compartidos
+const _addV  = (a, b) => a.map((v, i) => v + b[i]);
+const _scaleV = (s, v) => v.map(x => x * s);
+
 /**
+ * Euler vectorizado — orden 1.
  * @param {Function} F  - F(t, Y) => dY/dt como array
- * @param {number[]} Y0
- * @param {number}   t0
- * @param {number}   tEnd
- * @param {number}   h
  */
-function rk4Vector(F, Y0, t0, tEnd, h) {
-  const n = Y0.length;
-  const addVec = (a, b) => a.map((v, i) => v + b[i]);
-  const scaleVec = (s, v) => v.map(x => x * s);
+function eulerVector(F, Y0, t0, tEnd, h) {
   let t = t0, Y = [...Y0];
   const ts = [t0], Ys = [Y0.map(v => +v.toFixed(4))];
-
   while (t < tEnd) {
     const K1 = F(t, Y);
-    const K2 = F(t + h / 2, addVec(Y, scaleVec(h / 2, K1)));
-    const K3 = F(t + h / 2, addVec(Y, scaleVec(h / 2, K2)));
-    const K4 = F(t + h,     addVec(Y, scaleVec(h, K3)));
+    Y = _addV(Y, _scaleV(h, K1));
+    t = +(t + h).toFixed(10);
+    ts.push(+t.toFixed(4));
+    Ys.push(Y.map(v => +v.toFixed(4)));
+  }
+  return { ts, Ys };
+}
+
+/**
+ * Heun vectorizado — orden 2.
+ */
+function heunVector(F, Y0, t0, tEnd, h) {
+  let t = t0, Y = [...Y0];
+  const ts = [t0], Ys = [Y0.map(v => +v.toFixed(4))];
+  while (t < tEnd) {
+    const K1   = F(t, Y);
+    const Ypred = _addV(Y, _scaleV(h, K1));
+    const K2   = F(t + h, Ypred);
+    Y = Y.map((v, i) => v + (h / 2) * (K1[i] + K2[i]));
+    t = +(t + h).toFixed(10);
+    ts.push(+t.toFixed(4));
+    Ys.push(Y.map(v => +v.toFixed(4)));
+  }
+  return { ts, Ys };
+}
+
+/**
+ * RK4 vectorizado — orden 4.
+ */
+function rk4Vector(F, Y0, t0, tEnd, h) {
+  let t = t0, Y = [...Y0];
+  const ts = [t0], Ys = [Y0.map(v => +v.toFixed(4))];
+  while (t < tEnd) {
+    const K1 = F(t, Y);
+    const K2 = F(t + h / 2, _addV(Y, _scaleV(h / 2, K1)));
+    const K3 = F(t + h / 2, _addV(Y, _scaleV(h / 2, K2)));
+    const K4 = F(t + h,     _addV(Y, _scaleV(h, K3)));
     Y = Y.map((v, i) => v + (h / 6) * (K1[i] + 2 * K2[i] + 2 * K3[i] + K4[i]));
     t = +(t + h).toFixed(10);
     ts.push(+t.toFixed(4));
@@ -901,6 +1068,32 @@ function lagrange(xs, ys, t) {
     result += ys[i] * Li;
   }
   return result;
+}
+
+/**
+ * Interpolación de Newton — Diferencias Divididas.
+ * Construye la tabla de diferencias divididas y evalúa en t.
+ * @param {number[]} xs
+ * @param {number[]} ys
+ * @param {number}   t
+ * @returns {{ value: number, tabla: number[][] }}
+ */
+function newtonDivDiff(xs, ys, t) {
+  const n = xs.length;
+  // Construir tabla de diferencias divididas
+  const dd = Array.from({ length: n }, (_, i) => new Array(n).fill(0));
+  for (let i = 0; i < n; i++) dd[i][0] = ys[i];
+  for (let j = 1; j < n; j++) {
+    for (let i = 0; i < n - j; i++) {
+      dd[i][j] = (dd[i + 1][j - 1] - dd[i][j - 1]) / (xs[i + j] - xs[i]);
+    }
+  }
+  // Evaluar con el esquema de Horner
+  let value = dd[0][n - 1];
+  for (let i = n - 2; i >= 0; i--) {
+    value = dd[0][i] + (t - xs[i]) * value;
+  }
+  return { value, tabla: dd };
 }
 
 /**
@@ -1038,16 +1231,27 @@ function secante(f, x0, x1, tol = 1e-6, maxIter = 100) {
 
 /* Exportar al scope global (sin módulos para compatibilidad CDN) */
 window.NUM = {
+  // Álgebra lineal
   gaussSeidel,
   numeroDeCodicion,
   inversaGauss,
+  // EDO escalares
+  euler,
+  heun,
   rk4,
+  // EDO vectorizados
+  eulerVector,
+  heunVector,
   rk4Vector,
+  // Interpolación
   lagrange,
+  newtonDivDiff,
   splineCubico,
+  // Integración
   trapecio,
   simpson13,
   simpson38,
+  // Raíces
   newtonRaphson,
   biseccion,
   secante
@@ -1341,160 +1545,315 @@ function perturbacionA() {
 }
 
 /* ══════════════════════════════════════════════════════════
-   ESCENARIO B — RK4 DESCENSO
+   ESCENARIO B — EULER / HEUN / RK4  (DESCENSO)
    ══════════════════════════════════════════════════════════ */
-function simularDescenso(H0val, gravVal, empVal, alarmaVal, hVal, resId, chartId) {
-  resId = resId || 'resB'; chartId = chartId || 'chartB';
+
+/** Ejecuta UN método EDO escalar y devuelve {ts, ys, tCruce}. */
+function _correrEDO(metodo, f, H0, alarma, h) {
+  const solvers = { euler: NUM.euler, heun: NUM.heun, rk4: NUM.rk4 };
+  const { ts, ys } = solvers[metodo](f, H0, 0, 3600, h, (t, H) => H <= alarma);
+  let tCruce = null;
+  for (let i = 0; i < ys.length; i++) {
+    if (ys[i] <= alarma) { tCruce = ts[i]; break; }
+  }
+  return { ts, ys, tCruce };
+}
+
+/** Submuestrea arrays largos a máx nMax puntos. */
+function _sub(arr, nMax = 300) {
+  const step = Math.max(1, Math.floor(arr.length / nMax));
+  return arr.filter((_, i) => i % step === 0);
+}
+
+function simularDescenso(H0val, gravVal, empVal, alarmaVal, hVal, resId, chartId, metodoForced) {
+  resId   = resId   || 'resB';
+  chartId = chartId || 'chartB';
   try {
-    const H0     = H0val     !== undefined ? H0val     : getNum('H0', 'Altitud inicial');
-    const grav   = gravVal   !== undefined ? gravVal   : getNum('gravB', 'Gravedad');
+    const H0     = H0val     !== undefined ? H0val     : getNum('H0',      'Altitud inicial');
+    const grav   = gravVal   !== undefined ? gravVal   : getNum('gravB',   'Gravedad');
     const empuje = empVal    !== undefined ? empVal    : getNum('empujeB', 'Empuje');
     const alarma = alarmaVal !== undefined ? alarmaVal : getNum('alarmaB', 'Alarma');
-    const h      = hVal      !== undefined ? hVal      : getNum('hB', 'Paso h');
+    const h      = hVal      !== undefined ? hVal      : getNum('hB',      'Paso h');
+    const metodo = metodoForced || (document.getElementById('metodoB') ? document.getElementById('metodoB').value : 'rk4');
 
-    if (h <= 0) throw new Error('El paso h debe ser positivo');
+    if (h <= 0)    throw new Error('El paso h debe ser positivo');
     if (H0 <= alarma) throw new Error('La altitud inicial debe superar la alarma');
 
-    // dH/dt = empuje - gravedad (negativo = descenso neto)
+    // dH/dt = Empuje − Gravedad  (constante aquí, variable si se extiende)
     const f = (t, H) => empuje - grav;
-    const { ts, ys } = NUM.rk4(f, H0, 0, 3600, h, (t, H) => H <= alarma);
 
-    // Tiempo de cruce
-    let tCruce = null;
-    for (let i = 0; i < ys.length; i++) {
-      if (ys[i] <= alarma) { tCruce = ts[i]; break; }
+    const COLORS = { euler: '#ff6b35', heun: '#00e896', rk4: '#00d4ff' };
+    const NOMBRES = { euler: 'Euler', heun: 'Heun (RK2)', rk4: 'RK4' };
+
+    if (metodo === 'todos') {
+      // ── MODO COMPARACIÓN ──────────────────────────────
+      const resultados = {};
+      ['euler', 'heun', 'rk4'].forEach(m => { resultados[m] = _correrEDO(m, f, H0, alarma, h); });
+
+      // Usar eje de tiempo del más largo (rk4 como referencia)
+      const tsRef = _sub(resultados.rk4.ts);
+
+      let texto = `<span class="hi">Comparación de métodos EDO</span>\n\n`;
+      ['euler', 'heun', 'rk4'].forEach(m => {
+        const tc = resultados[m].tCruce;
+        texto += `${NOMBRES[m].padEnd(12)}: t_cruce = ${tc !== null ? tc.toFixed(4) + ' s' : 'No alcanzó'}\n`;
+      });
+      const tc_rk4 = resultados.rk4.tCruce, tc_eu = resultados.euler.tCruce, tc_h = resultados.heun.tCruce;
+      if (tc_rk4 && tc_eu) texto += `\nDesviación Euler vs RK4:  ${Math.abs(tc_eu - tc_rk4).toFixed(4)} s`;
+      if (tc_rk4 && tc_h)  texto += `\nDesviación Heun  vs RK4:  ${Math.abs(tc_h - tc_rk4).toFixed(4)} s`;
+      texto += `\n\n<span class="ok">RK4 es la referencia más precisa (error O(h⁵)/paso).</span>`;
+      setResult(resId, texto);
+
+      // Tabla comparativa
+      const wrap = document.getElementById('tablaB-wrap');
+      if (wrap) {
+        wrap.style.display = '';
+        document.getElementById('tablaB').innerHTML = `
+          <table><thead><tr>
+            <th>Método</th><th>Orden</th><th>Evaluaciones f/paso</th><th>t cruce (s)</th><th>Error vs RK4 (s)</th>
+          </tr></thead><tbody>
+          ${[['euler','1','1'],['heun','2','2'],['rk4','4','4']].map(([m, ord, ev]) => {
+            const tc = resultados[m].tCruce;
+            const err = tc && tc_rk4 ? Math.abs(tc - tc_rk4).toFixed(6) : '—';
+            return `<tr${m==='rk4'?' class="converged"':''}>
+              <td>${NOMBRES[m]}</td><td>${ord}</td><td>${ev}</td>
+              <td>${tc !== null ? tc.toFixed(4) : 'No alcanzó'}</td>
+              <td>${err}</td></tr>`;
+          }).join('')}
+          </tbody></table>`;
+      }
+
+      // Gráfica con las 3 curvas + línea de alarma
+      const datasets = ['euler', 'heun', 'rk4'].map(m => ({
+        label: NOMBRES[m],
+        data: _sub(resultados[m].ys),
+        borderColor: COLORS[m],
+        pointRadius: 0,
+        borderWidth: m === 'rk4' ? 2.5 : 1.5,
+        borderDash: m === 'euler' ? [4, 3] : m === 'heun' ? [2, 2] : [],
+        tension: 0.3,
+      }));
+      datasets.push({
+        label: `Alarma (${alarma} m)`,
+        data: tsRef.map(() => alarma),
+        borderColor: '#ff4444',
+        borderDash: [6, 4],
+        pointRadius: 0,
+        borderWidth: 1.5,
+      });
+      crearChart(chartId, {
+        type: 'line',
+        data: { labels: tsRef, datasets },
+        options: { ...defaultOpts('Comparación Euler · Heun · RK4'), scales: {
+          x: { ...defaultOpts().scales.x, title: { display: true, text: 'Tiempo (s)', color: tickColor } },
+          y: { ...defaultOpts().scales.y, title: { display: true, text: 'Altitud (m)', color: tickColor } }
+        }}
+      });
+
+    } else {
+      // ── MODO ÚNICO ────────────────────────────────────
+      const { ts, ys, tCruce } = _correrEDO(metodo, f, H0, alarma, h);
+      const tsPlot = _sub(ts), ysPlot = _sub(ys);
+
+      const resText = tCruce !== null
+        ? `<span class="ok">✓ ${NOMBRES[metodo]} — Simulación completada</span>\n\n` +
+          `<span class="hi">Tiempo de cruce a zona crítica:</span>\n` +
+          `  t = ${tCruce.toFixed(4)} s (${(tCruce/60).toFixed(4)} min)\n\n` +
+          `Altitud final: ${ys[ys.length-1].toFixed(1)} m\n` +
+          `Velocidad neta de descenso: ${(grav - empuje).toFixed(1)} m/s\n` +
+          `Pasos de integración: ${ts.length}\n\n` +
+          `Interpretación: El FANI tardó ${tCruce.toFixed(2)} s en penetrar\nel espacio aéreo comercial (${alarma} m).`
+        : `<span class="warn">⚠ No alcanzó la altitud de alarma en el tiempo simulado.</span>\n` +
+          `Altitud mínima: ${Math.min(...ys).toFixed(1)} m`;
+
+      setResult(resId, resText);
+      const wrap = document.getElementById('tablaB-wrap');
+      if (wrap) wrap.style.display = 'none';
+
+      crearChart(chartId, {
+        type: 'line',
+        data: {
+          labels: tsPlot,
+          datasets: [
+            { label: `Altitud — ${NOMBRES[metodo]}`, data: ysPlot,
+              borderColor: COLORS[metodo], backgroundColor: `${COLORS[metodo]}14`,
+              fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+            { label: `Zona de alerta (${alarma} m)`, data: tsPlot.map(() => alarma),
+              borderColor: '#ff6b35', borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 }
+          ]
+        },
+        options: { ...defaultOpts(`Descenso Cinemático — ${NOMBRES[metodo]}`), scales: {
+          x: { ...defaultOpts().scales.x, title: { display: true, text: 'Tiempo (s)', color: tickColor } },
+          y: { ...defaultOpts().scales.y, title: { display: true, text: 'Altitud (m)', color: tickColor } }
+        }}
+      });
     }
-
-    // Submuestrear para la gráfica (máx 300 puntos)
-    const step = Math.max(1, Math.floor(ts.length / 300));
-    const tsPlot = ts.filter((_, i) => i % step === 0);
-    const ysPlot = ys.filter((_, i) => i % step === 0);
-
-    const resText = tCruce !== null
-      ? `<span class="ok">✓ Simulación completada</span>\n\n` +
-        `<span class="hi">Tiempo de cruce a zona crítica:</span>\n` +
-        `  t = ${tCruce.toFixed(2)} s (${(tCruce/60).toFixed(2)} min)\n\n` +
-        `Altitud final: ${ys[ys.length-1].toFixed(1)} m\n` +
-        `Velocidad neta de descenso: ${(grav - empuje).toFixed(1)} m/s\n\n` +
-        `Interpretación: El FANI tardó ${tCruce.toFixed(1)} s en penetrar\nel espacio aéreo comercial (${alarma} m).`
-      : `<span class="warn">⚠ No alcanzó la altitud de alarma en el tiempo simulado.</span>\n` +
-        `Altitud mínima: ${Math.min(...ys).toFixed(1)} m`;
-
-    setResult(resId, resText);
-
-    crearChart(chartId, {
-      type: 'line',
-      data: {
-        labels: tsPlot,
-        datasets: [
-          {
-            label: 'Altitud FANI (m)',
-            data: ysPlot,
-            borderColor: '#00d4ff',
-            backgroundColor: 'rgba(0,212,255,0.08)',
-            fill: true,
-            tension: 0.4,
-            pointRadius: 0,
-            borderWidth: 2
-          },
-          {
-            label: `Zona de alerta (${alarma} m)`,
-            data: tsPlot.map(() => alarma),
-            borderColor: '#ff6b35',
-            borderDash: [6, 4],
-            pointRadius: 0,
-            borderWidth: 1.5
-          }
-        ]
-      },
-      options: { ...defaultOpts('Descenso Cinemático — RK4'), scales: { x: { ...defaultOpts().scales.x, title: { display: true, text: 'Tiempo (s)', color: tickColor } }, y: { ...defaultOpts().scales.y, title: { display: true, text: 'Altitud (m)', color: tickColor } } } }
-    });
   } catch (e) {
     setResult(resId, `<span class="err">Error: ${e.message}</span>`);
   }
 }
 
 /* ══════════════════════════════════════════════════════════
-   ESCENARIO C — INTERPOLACIÓN
+   ESCENARIO C — INTERPOLACIÓN (Lagrange · Newton · Spline)
    ══════════════════════════════════════════════════════════ */
 function interpolar(xsIn, ysIn, tConsIn, resId, chartId) {
   resId = resId || 'resC'; chartId = chartId || 'chartC';
   try {
-    let xs, ys, tConsulta;
+    let xs, ys, tConsulta, metodo;
     if (xsIn !== undefined) {
       xs = xsIn; ys = ysIn; tConsulta = tConsIn;
+      metodo = 'spline'; // casos de prueba usan spline por defecto
     } else {
       const pts = parsePuntos('puntosC');
       xs = pts.xs; ys = pts.ys;
       tConsulta = getNum('tConsulta', 'Segundo consulta');
+      metodo = document.getElementById('metodoC') ? document.getElementById('metodoC').value : 'spline';
     }
 
-    if (xs.length < 3) throw new Error('Se necesitan al menos 3 puntos para Spline Cúbico');
+    if (xs.length < 2) throw new Error('Se necesitan al menos 2 puntos');
 
     // Ordenar por x
     const sorted = xs.map((x, i) => ({ x, y: ys[i] })).sort((a, b) => a.x - b.x);
     const sxs = sorted.map(p => p.x);
     const sys = sorted.map(p => p.y);
 
-    const evalSpline = NUM.splineCubico(sxs, sys);
-    const yInterp = evalSpline(tConsulta);
-
-    // Curva suave para gráfica
     const tMin = sxs[0], tMax = sxs[sxs.length - 1];
-    const nPts = 200;
+    const nPts = 250;
     const tCurva = Array.from({ length: nPts }, (_, i) => tMin + (i / (nPts - 1)) * (tMax - tMin));
-    const yCurva = tCurva.map(t => evalSpline(t));
 
-    setResult(resId,
-      `<span class="ok">✓ Interpolación Spline Cúbico Natural</span>\n\n` +
-      `<span class="hi">Altitud estimada en t = ${tConsulta} s:</span>\n` +
-      `  H = ${yInterp.toFixed(4)} m\n\n` +
-      `Rango de datos: [${tMin} s, ${tMax} s]\n` +
-      `Puntos de soporte: ${sxs.length}\n\n` +
-      `Interpretación: El objeto se encontraba a ${yInterp.toFixed(1)} m de altitud\nen el segundo ${tConsulta}, interpolado de forma continua\nentre los registros discretos de los sensores.`
-    );
+    // ── Funciones de cada método ──────────────────────────
+    const evalSpline  = NUM.splineCubico(sxs, sys);
+    const evalLagrange = t => NUM.lagrange(sxs, sys, t);
+    const evalNewton   = t => NUM.newtonDivDiff(sxs, sys, t).value;
 
-    crearChart(chartId, {
-      type: 'line',
-      data: {
-        labels: tCurva.map(t => t.toFixed(2)),
-        datasets: [
-          {
-            label: 'Spline Cúbico',
-            data: yCurva,
-            borderColor: '#7b2fff',
-            backgroundColor: 'rgba(123,47,255,0.08)',
-            fill: true,
-            tension: 0,
-            pointRadius: 0,
-            borderWidth: 2
-          },
-          {
-            label: 'Datos sensor',
-            data: (() => {
-              // Mapear puntos conocidos al eje x de la curva
-              return tCurva.map((t, i) => {
-                const idx = sxs.findIndex(sx => Math.abs(sx - t) < (tMax - tMin) / nPts * 1.5);
-                return idx >= 0 ? sys[idx] : null;
-              });
-            })(),
-            borderColor: '#00d4ff',
-            backgroundColor: '#00d4ff',
-            pointRadius: 5,
-            showLine: false
-          },
-          {
-            label: `t=${tConsulta}s → ${yInterp.toFixed(1)}m`,
-            data: tCurva.map(t => Math.abs(t - tConsulta) < (tMax - tMin) / nPts ? yInterp : null),
-            borderColor: '#ff6b35',
-            backgroundColor: '#ff6b35',
-            pointRadius: 8,
-            showLine: false
+    const METODOS = {
+      spline:   { fn: evalSpline,   label: 'Spline Cúbico',          color: '#7b2fff' },
+      lagrange: { fn: evalLagrange, label: 'Lagrange',               color: '#00e896' },
+      newton:   { fn: evalNewton,   label: 'Newton (Dif. Divididas)', color: '#ff6b35' },
+    };
+
+    // Puntos sensores para scatter
+    const sensorDataset = {
+      label: 'Datos sensor',
+      data: tCurva.map(t => {
+        const idx = sxs.findIndex(sx => Math.abs(sx - t) < (tMax - tMin) / nPts * 1.5);
+        return idx >= 0 ? sys[idx] : null;
+      }),
+      borderColor: '#00d4ff', backgroundColor: '#00d4ff',
+      pointRadius: 5, showLine: false,
+    };
+
+    if (metodo === 'todos') {
+      // ── COMPARACIÓN ───────────────────────────────────
+      const valores = {};
+      Object.entries(METODOS).forEach(([k, { fn }]) => { valores[k] = fn(tConsulta); });
+
+      let texto = `<span class="hi">Comparación de métodos — t = ${tConsulta} s</span>\n\n`;
+      Object.entries(METODOS).forEach(([k, { label }]) => {
+        texto += `${label.padEnd(28)}: ${valores[k].toFixed(4)} m\n`;
+      });
+      const ref = valores.spline;
+      texto += `\nDesviación Lagrange vs Spline: ${Math.abs(valores.lagrange - ref).toFixed(4)} m`;
+      texto += `\nDesviación Newton   vs Spline: ${Math.abs(valores.newton   - ref).toFixed(4)} m`;
+      texto += `\n\n<span class="ok">Con pocos puntos bien distribuidos los tres métodos convergen al mismo valor.</span>`;
+      setResult(resId, texto);
+
+      // Tabla de diferencias divididas de Newton
+      const { tabla } = NUM.newtonDivDiff(sxs, sys, tConsulta);
+      const tablaWrap = document.getElementById('tablaC-wrap');
+      if (tablaWrap) {
+        tablaWrap.style.display = '';
+        let tHtml = '<table><thead><tr><th>i</th><th>xᵢ</th><th>f[xᵢ]</th>';
+        for (let j = 1; j < sxs.length; j++) tHtml += `<th>Δ${j}</th>`;
+        tHtml += '</tr></thead><tbody>';
+        for (let i = 0; i < sxs.length; i++) {
+          tHtml += `<tr><td>${i}</td><td>${sxs[i].toFixed(2)}</td>`;
+          for (let j = 0; j < sxs.length; j++) {
+            tHtml += `<td>${tabla[i][j] !== 0 || j === 0 ? tabla[i][j].toFixed(4) : ''}</td>`;
           }
-        ]
-      },
-      options: { ...defaultOpts('Ruta de Vuelo Interpolada'), scales: { x: { ...defaultOpts().scales.x, title: { display: true, text: 'Tiempo (s)', color: tickColor } }, y: { ...defaultOpts().scales.y, title: { display: true, text: 'Altitud (m)', color: tickColor } } } }
-    });
+          tHtml += '</tr>';
+        }
+        tHtml += '</tbody></table>';
+        document.getElementById('tablaC').innerHTML = tHtml;
+      }
+
+      // 3 curvas + scatter + punto consultado (promedio)
+      const datasets = Object.entries(METODOS).map(([k, { fn, label, color }]) => ({
+        label,
+        data: tCurva.map(t => fn(t)),
+        borderColor: color,
+        pointRadius: 0,
+        borderWidth: k === 'spline' ? 2.5 : 1.8,
+        borderDash: k === 'lagrange' ? [5,3] : k === 'newton' ? [2,2] : [],
+        tension: 0,
+      }));
+      datasets.push(sensorDataset);
+
+      crearChart(chartId, {
+        type: 'line',
+        data: { labels: tCurva.map(t => t.toFixed(2)), datasets },
+        options: { ...defaultOpts(`Comparación de Métodos — t=${tConsulta}s`), scales: {
+          x: { ...defaultOpts().scales.x, title: { display: true, text: 'Tiempo (s)', color: tickColor } },
+          y: { ...defaultOpts().scales.y, title: { display: true, text: 'Altitud (m)', color: tickColor } }
+        }}
+      });
+
+    } else {
+      // ── MODO ÚNICO ────────────────────────────────────
+      if (metodo === 'spline' && xs.length < 3) throw new Error('Spline necesita mínimo 3 puntos');
+      const { fn, label, color } = METODOS[metodo];
+      const yInterp = fn(tConsulta);
+      const yCurva  = tCurva.map(t => fn(t));
+
+      // Tabla de diferencias divididas solo para Newton
+      const tablaWrap = document.getElementById('tablaC-wrap');
+      if (metodo === 'newton' && tablaWrap) {
+        tablaWrap.style.display = '';
+        const { tabla } = NUM.newtonDivDiff(sxs, sys, tConsulta);
+        let tHtml = '<table><thead><tr><th>i</th><th>xᵢ</th><th>f[xᵢ]</th>';
+        for (let j = 1; j < sxs.length; j++) tHtml += `<th>Δ${j}</th>`;
+        tHtml += '</tr></thead><tbody>';
+        for (let i = 0; i < sxs.length; i++) {
+          tHtml += `<tr><td>${i}</td><td>${sxs[i].toFixed(2)}</td>`;
+          for (let j = 0; j < sxs.length; j++) {
+            tHtml += `<td>${tabla[i][j] !== 0 || j === 0 ? tabla[i][j].toFixed(4) : ''}</td>`;
+          }
+          tHtml += '</tr>';
+        }
+        tHtml += '</tbody></table>';
+        document.getElementById('tablaC').innerHTML = tHtml;
+      } else if (tablaWrap) {
+        tablaWrap.style.display = 'none';
+      }
+
+      setResult(resId,
+        `<span class="ok">✓ ${label}</span>\n\n` +
+        `<span class="hi">Altitud estimada en t = ${tConsulta} s:</span>\n` +
+        `  H = ${yInterp.toFixed(4)} m\n\n` +
+        `Rango de datos: [${tMin} s, ${tMax} s]\n` +
+        `Puntos de soporte: ${sxs.length}\n\n` +
+        `Interpretación: El objeto se encontraba a ${yInterp.toFixed(1)} m\nen el segundo ${tConsulta}.`
+      );
+
+      crearChart(chartId, {
+        type: 'line',
+        data: {
+          labels: tCurva.map(t => t.toFixed(2)),
+          datasets: [
+            { label, data: yCurva, borderColor: color, backgroundColor: `${color}14`,
+              fill: true, tension: 0, pointRadius: 0, borderWidth: 2 },
+            sensorDataset,
+            { label: `t=${tConsulta}s → ${yInterp.toFixed(1)}m`,
+              data: tCurva.map(t => Math.abs(t - tConsulta) < (tMax - tMin) / nPts ? yInterp : null),
+              borderColor: '#ff6b35', backgroundColor: '#ff6b35', pointRadius: 9, showLine: false }
+          ]
+        },
+        options: { ...defaultOpts(`Ruta de Vuelo — ${label}`), scales: {
+          x: { ...defaultOpts().scales.x, title: { display: true, text: 'Tiempo (s)', color: tickColor } },
+          y: { ...defaultOpts().scales.y, title: { display: true, text: 'Altitud (m)', color: tickColor } }
+        }}
+      });
+    }
   } catch (e) {
     setResult(resId, `<span class="err">Error: ${e.message}</span>`);
   }
@@ -1690,7 +2049,7 @@ function analizarCondicion() {
 }
 
 /* ══════════════════════════════════════════════════════════
-   ESCENARIO G — DINÁMICA SOCIAL RK4 VECTORIZADO
+   ESCENARIO G — DINÁMICA SOCIAL  (Euler · Heun · RK4 vectorizados)
    ══════════════════════════════════════════════════════════ */
 function simularDinamica() {
   try {
@@ -1703,13 +2062,12 @@ function simularDinamica() {
     const k  = getNum('paramK','k');
     const r  = getNum('paramR','r');
     const T  = getNum('tG','Tiempo');
+    const metodo = document.getElementById('metodoG').value;
 
     if ([E0,A0,M0].some(v => v < 0)) throw new Error('Las poblaciones no pueden ser negativas');
     if ([a,b,c,k,r].some(v => v < 0)) throw new Error('Los parámetros deben ser no negativos');
 
-    // dE/dt = -aEA + bMA
-    // dA/dt =  aEA - cAM
-    // dM/dt =  kA  - rM
+    // Sistema de EDO
     const F = (t, Y) => {
       const [E, A, M] = Y;
       return [
@@ -1720,44 +2078,104 @@ function simularDinamica() {
     };
 
     const h = T / 2000;
-    const { ts, Ys } = NUM.rk4Vector(F, [E0, A0, M0], 0, T, h);
+    const Y0 = [E0, A0, M0];
 
-    // Submuestrear
-    const step = Math.max(1, Math.floor(ts.length / 300));
-    const tsP = ts.filter((_, i) => i % step === 0);
-    const YsP = Ys.filter((_, i) => i % step === 0);
+    const SOLVERS = {
+      euler: NUM.eulerVector,
+      heun:  NUM.heunVector,
+      rk4:   NUM.rk4Vector,
+    };
+    const NOMBRES_G = { euler: 'Euler', heun: 'Heun (RK2)', rk4: 'RK4' };
+    const COLORS_G  = { euler: '#ff6b35', heun: '#00e896', rk4: '#00d4ff' };
 
-    const Efin = YsP[YsP.length-1][0];
-    const Afin = YsP[YsP.length-1][1];
-    const Mfin = YsP[YsP.length-1][2];
-    const total = Efin + Afin + Mfin;
+    // Submuestrear helper
+    const subY = (Ys, nMax = 300) => {
+      const step = Math.max(1, Math.floor(Ys.length / nMax));
+      return Ys.filter((_, i) => i % step === 0);
+    };
 
-    let tendencia;
-    if (Afin / total > 0.5) tendencia = 'MASIFICACIÓN — El pánico social se propaga y domina la población.';
-    else if (Afin < A0 * 0.1) tendencia = 'DISIPACIÓN — La alarma se controló eficazmente.';
-    else tendencia = 'ESTABILIZACIÓN — El fenómeno persiste a nivel moderado.';
+    if (metodo === 'todos') {
+      // ── COMPARACIÓN: mostrar curva de Alarmados (A) para los 3 métodos ──
+      const resultados = {};
+      Object.entries(SOLVERS).forEach(([m, solver]) => {
+        const { ts, Ys } = solver(F, Y0, 0, T, h);
+        resultados[m] = { ts: _sub(ts), Ys: subY(Ys) };
+      });
 
-    setResult('resG',
-      `<span class="ok">✓ RK4 vectorizado — ${ts.length} pasos</span>\n\n` +
-      `Estado final (día ${T}):\n` +
-      `  Escépticos: ${Efin.toFixed(1)} (${(Efin/total*100).toFixed(1)}%)\n` +
-      `  Alarmados:  ${Afin.toFixed(1)} (${(Afin/total*100).toFixed(1)}%)\n` +
-      `  Medios:     ${Mfin.toFixed(1)} (${(Mfin/total*100).toFixed(1)}%)\n\n` +
-      `<span class="hi">Tendencia: ${tendencia}</span>`
-    );
+      // Estado final de cada uno
+      let texto = `<span class="hi">Comparación de métodos — Alarmados(A) al día ${T}</span>\n\n`;
+      Object.entries(NOMBRES_G).forEach(([m, nm]) => {
+        const Yfin = resultados[m].Ys[resultados[m].Ys.length - 1];
+        const total = Yfin[0] + Yfin[1] + Yfin[2];
+        texto += `${nm.padEnd(14)}: A_fin = ${Yfin[1].toFixed(1)} (${(Yfin[1]/total*100).toFixed(1)}%)\n`;
+      });
+      const A_rk4   = resultados.rk4.Ys[resultados.rk4.Ys.length-1][1];
+      const A_euler = resultados.euler.Ys[resultados.euler.Ys.length-1][1];
+      const A_heun  = resultados.heun.Ys[resultados.heun.Ys.length-1][1];
+      texto += `\nDesviación Euler vs RK4: ${Math.abs(A_euler - A_rk4).toFixed(2)} personas`;
+      texto += `\nDesviación Heun  vs RK4: ${Math.abs(A_heun  - A_rk4).toFixed(2)} personas`;
+      texto += `\n\n<span class="ok">RK4 vectorizado es el más preciso para sistemas no lineales.</span>`;
+      setResult('resG', texto);
 
-    crearChart('chartG', {
-      type: 'line',
-      data: {
-        labels: tsP.map(t => t.toFixed(1)),
-        datasets: [
-          { label: 'Escépticos (E)', data: YsP.map(Y => Y[0]), borderColor: '#00d4ff', tension: 0.3, pointRadius: 0 },
-          { label: 'Alarmados (A)',  data: YsP.map(Y => Y[1]), borderColor: '#ff6b35', tension: 0.3, pointRadius: 0 },
-          { label: 'Medios (M)',     data: YsP.map(Y => Y[2]), borderColor: '#7b2fff', tension: 0.3, pointRadius: 0 }
-        ]
-      },
-      options: { ...defaultOpts('Dinámica Social — Avistamiento FANI'), scales: { x: { ...defaultOpts().scales.x, title: { display: true, text: 'Días', color: tickColor } }, y: { ...defaultOpts().scales.y, title: { display: true, text: 'Población', color: tickColor } } } }
-    });
+      const datasets = Object.entries(NOMBRES_G).map(([m, nm]) => ({
+        label: `Alarmados — ${nm}`,
+        data: resultados[m].Ys.map(Y => Y[1]),
+        borderColor: COLORS_G[m],
+        pointRadius: 0,
+        borderWidth: m === 'rk4' ? 2.5 : 1.8,
+        borderDash: m === 'euler' ? [5,3] : m === 'heun' ? [2,2] : [],
+        tension: 0.3,
+      }));
+
+      crearChart('chartG', {
+        type: 'line',
+        data: { labels: resultados.rk4.ts.map(t => (+t).toFixed(1)), datasets },
+        options: { ...defaultOpts('Comparación: Alarmados (A) — Euler · Heun · RK4'), scales: {
+          x: { ...defaultOpts().scales.x, title: { display: true, text: 'Días', color: tickColor } },
+          y: { ...defaultOpts().scales.y, title: { display: true, text: 'Personas', color: tickColor } }
+        }}
+      });
+
+    } else {
+      // ── MODO ÚNICO ────────────────────────────────────
+      const { ts, Ys } = SOLVERS[metodo](F, Y0, 0, T, h);
+      const tsP = _sub(ts), YsP = subY(Ys);
+
+      const Efin = YsP[YsP.length-1][0];
+      const Afin = YsP[YsP.length-1][1];
+      const Mfin = YsP[YsP.length-1][2];
+      const total = Efin + Afin + Mfin;
+
+      let tendencia;
+      if (Afin / total > 0.5)    tendencia = 'MASIFICACIÓN — El pánico social domina la población.';
+      else if (Afin < A0 * 0.1)  tendencia = 'DISIPACIÓN — La alarma se controló eficazmente.';
+      else                        tendencia = 'ESTABILIZACIÓN — El fenómeno persiste a nivel moderado.';
+
+      setResult('resG',
+        `<span class="ok">✓ ${NOMBRES_G[metodo]} vectorizado — ${ts.length} pasos</span>\n\n` +
+        `Estado final (día ${T}):\n` +
+        `  Escépticos: ${Efin.toFixed(1)} (${(Efin/total*100).toFixed(1)}%)\n` +
+        `  Alarmados:  ${Afin.toFixed(1)} (${(Afin/total*100).toFixed(1)}%)\n` +
+        `  Medios:     ${Mfin.toFixed(1)} (${(Mfin/total*100).toFixed(1)}%)\n\n` +
+        `<span class="hi">Tendencia: ${tendencia}</span>`
+      );
+
+      crearChart('chartG', {
+        type: 'line',
+        data: {
+          labels: tsP.map(t => (+t).toFixed(1)),
+          datasets: [
+            { label: 'Escépticos (E)', data: YsP.map(Y => Y[0]), borderColor: '#00d4ff', tension: 0.3, pointRadius: 0 },
+            { label: 'Alarmados (A)',  data: YsP.map(Y => Y[1]), borderColor: '#ff6b35', tension: 0.3, pointRadius: 0 },
+            { label: 'Medios (M)',     data: YsP.map(Y => Y[2]), borderColor: '#7b2fff', tension: 0.3, pointRadius: 0 }
+          ]
+        },
+        options: { ...defaultOpts(`Dinámica Social — ${NOMBRES_G[metodo]}`), scales: {
+          x: { ...defaultOpts().scales.x, title: { display: true, text: 'Días', color: tickColor } },
+          y: { ...defaultOpts().scales.y, title: { display: true, text: 'Población', color: tickColor } }
+        }}
+      });
+    }
   } catch (e) {
     setResult('resG', `<span class="err">Error: ${e.message}</span>`);
   }
